@@ -10,12 +10,11 @@ class User(AbstractUser):
 
     role = models.IntegerField(choices=Role.choices, default=Role.Basic)
 
-    def has_data_access(self, user_id):
-        if self.uploader is not None and self.id == user_id:
-            return True
-        if len(self.observing.filter(uploader__owner__id=user_id)):
-            return True
-        return False
+    def is_uploader(self, user_id):
+        return self.uploader is not None and self.id == user_id
+
+    def is_observer(self, user_id):
+        return len(self.observing.filter(uploader__owner__id=user_id)) > 0
 
 
 class Uploader(models.Model):
@@ -46,7 +45,7 @@ class Observer(models.Model):
 class GlucosePoint(TimeStampedModel):
     value = models.IntegerField()
     timestamp = models.DateTimeField()
-    device_data = models.JSONField()
+    device_data = models.JSONField(null=True)
     uploader = models.ForeignKey('alerts.Uploader', related_name='glucose_points', on_delete=models.CASCADE)
 
     class Meta:
