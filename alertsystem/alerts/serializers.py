@@ -3,7 +3,7 @@ from alerts.models import User, GlucosePoint, Uploader
 
 
 class GlucosePointSerializer(serializers.ModelSerializer):
-    uploader = serializers.ReadOnlyField(source="uploader.id")
+    uploader = serializers.ReadOnlyField(source="uploader.owner.username")
 
     class Meta:
         model = GlucosePoint
