@@ -1,4 +1,4 @@
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from alerts.serializers import UserSerializer, GlucosePointSerializer
 from alerts.models import User, GlucosePoint
@@ -19,4 +19,13 @@ class GlucosePointViewSet(viewsets.ReadOnlyModelViewSet):
 
     def list(self, request):
         queryset = self.queryset.filter(uploader__id=request.user.uploader.id)
-        return Response(self.serializer_class(queryset, many=True).data)
+        return Response(self.get_serializer(queryset, many=True).data)
+
+    def create(self, request):
+        serializer = self.get_serializer(data=request.data, many=True)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def perform_create(self, serializer):
+        serializer.save(uploader=self.request.user.uploader)
