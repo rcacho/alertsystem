@@ -1,8 +1,17 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
-from alerts.serializers import UserSerializer, GlucosePointSerializer
-from alerts.models import User, GlucosePoint
-from alerts.permissions import IsUploaderOrFollower
+from alerts.serializers import UserSerializer, GlucosePointSerializer, \
+    AlertSettingsReadSerializer, AlertSettingsWriteSerializer
+from alerts.models import User, Uploader, GlucosePoint, AlertSettings
+from alerts.permissions import IsUploaderOrFollower, IsObserver
+
+
+class MultiSerializerViewMixin(object):
+    def get_serializer_class(self):
+        try:
+            return self.serializer_action_classes[self.action]
+        except KeyError:
+            return super(MultiSerializerViewMixin, self).get_serializer_class()
 
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
@@ -11,7 +20,7 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [permissions.IsAdminUser]
 
 
-class GlucosePointViewSet(viewsets.ReadOnlyModelViewSet):
+class GlucosePointViewSet(viewsets.ModelViewSet):
     queryset = GlucosePoint.objects.all()
     serializer_class = GlucosePointSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly,
@@ -29,3 +38,26 @@ class GlucosePointViewSet(viewsets.ReadOnlyModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(uploader=self.request.user.uploader)
+
+
+class AlertSettingsViewSet(viewsets.ModelViewSet):
+    queryset = AlertSettings.objects.all()
+    serializer_class = AlertSettingsReadSerializer
+    serializer_classes = {
+        'list': AlertSettingsReadSerializer,
+        'retrieve': AlertSettingsReadSerializer,
+        'create': AlertSettingsWriteSerializer,
+        'update': AlertSettingsWriteSerializer,
+        'partial_update': AlertSettingsWriteSerializer,
+        'destroy': AlertSettingsWriteSerializer,
+    }
+    permissions_classes = [IsObserver]
+
+    def list(self, request):
+        queryset = self.queryset.filter(observer__owner__id=self.request.user.id)
+        return Response(self.get_serializer(queryset, many=True).data)
+
+    def perform_create(self, serializer):
+        serializer.save(observer=self.request.user.observing.get(
+            uploader__owner__id=serializer.uploader_id),
+            uploader=Uploader.objects.get(owner__id=serializer.uploader_id))

@@ -1,5 +1,21 @@
 from rest_framework import serializers
-from alerts.models import User, GlucosePoint, Uploader
+from alerts.models import User, GlucosePoint, Uploader, AlertSettings
+
+
+class AlertSettingsReadSerializer(serializers.ModelSerializer):
+    observer = serializers.ReadOnlyField(source="observer.owner.username")
+    uploader = serializers.ReadOnlyField(source="observer.uploader.owner.username")
+
+    class Meta:
+        model = AlertSettings
+        fields = ['observer', 'uploader', 'high_value', 'low_value']
+
+
+class AlertSettingsWriteSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = AlertSettings
+        fields = ['uploader_id', 'high_value', 'low_value']
 
 
 class GlucosePointSerializer(serializers.ModelSerializer):
