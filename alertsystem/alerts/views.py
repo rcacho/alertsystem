@@ -17,7 +17,20 @@ class MultiSerializerViewMixin(object):
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_permissions(self):
+        if self.action == 'list':
+            permission_classes = [permissions.IsAuthenticated]
+        else:
+            permission_classes = [permissions.IsAdminUser]
+        return [permission() for permission in permission_classes]
+
+    def list(self, request):
+        if request.user.is_staff:
+            return super().list(request)
+        queryset = self.queryset.get(id=request.user.id)
+        return Response(self.get_serializer(queryset).data)
 
 
 class GlucosePointViewSet(viewsets.ModelViewSet):
