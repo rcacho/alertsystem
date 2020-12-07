@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from alerts.serializers import UserSerializer, GlucosePointSerializer, \
     AlertSettingsReadSerializer, AlertSettingsWriteSerializer
 from alerts.models import User, Uploader, GlucosePoint, AlertSettings
-from alerts.permissions import IsUploaderOrFollower, IsObserver
+from alerts.permissions import IsUploaderOrFollower, IsUploader, IsObserver
 
 
 class MultiSerializerViewMixin(object):
@@ -14,13 +14,32 @@ class MultiSerializerViewMixin(object):
             return super(MultiSerializerViewMixin, self).get_serializer_class()
 
 
+class FollowerInviteViewSet(viewsets.CreateModelMixin, viewsets.ReadOnlyModelViewSet):
+    queryset = User.objects.all()
+
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve']:
+            permission_classes = [permissions.IsAuthenticated]
+        else:
+            permission_classes = [IsUploader]
+        return [permissions for permissions in permission_classes]
+
+    def list(self, request):
+        if request.user.is_staff:
+            return super().list(request)
+        queryset = self.queryset.filter(uploader__owner__id=request.user.id)
+        return Response(self.get_serializer(queryset).data)
+
+    def perform_create(self, serializer):
+        serializer.save(uploader=self.request.user.uploader)
+
+
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [permissions.IsAuthenticated]
 
     def get_permissions(self):
-        if self.action == 'list':
+        if self.action in ['list', 'retrieve']:
             permission_classes = [permissions.IsAuthenticated]
         else:
             permission_classes = [permissions.IsAdminUser]
