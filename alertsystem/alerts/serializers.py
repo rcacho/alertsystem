@@ -36,10 +36,10 @@ class UploaderSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    uploader = UploaderSerializer()
+    role = serializers.ReadOnlyField(source="get_defining_role")
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'uploader']
+        fields = ['id', 'username', 'email', 'role']
 
 

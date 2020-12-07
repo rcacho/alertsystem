@@ -11,10 +11,19 @@ class User(AbstractUser):
     role = models.IntegerField(choices=Role.choices, default=Role.Basic)
 
     def is_uploader(self, user_id):
-        return self.uploader is not None and self.id == user_id
+        return hasattr(self, 'uploader') and self.id == user_id
 
     def is_observer(self, user_id):
         return len(self.observing.filter(uploader__owner__id=user_id)) > 0
+
+    def get_defining_role(self):
+        if self.role == User.Role.Admin:
+            return 'admin'
+        if hasattr(self, 'uploader'):
+            return 'uploader'
+        if any([_ for _ in self.observing.all() if id != self.id]):
+            return 'follower'
+        return 'basic'
 
 
 class Uploader(models.Model):
