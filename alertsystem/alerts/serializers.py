@@ -1,5 +1,23 @@
 from rest_framework import serializers
-from alerts.models import User, GlucosePoint, Uploader, AlertSettings
+from alerts.models import User, GlucosePoint, Uploader, \
+    AlertSettings, FollowerInvitation
+
+
+class FollowerInvitationReadSerializer(serializers.ModelSerializer):
+    sent_by = serializers.ReadOnlyField(source="sent_by.email")
+    sent_to = serializers.ReadOnlyField(source="sent_to.email")
+
+    class Meta:
+        model = FollowerInvitation
+        fields = ['sent_by', 'sent_to', 'accepted', 'token']
+
+
+class FollowerInvitationWriteSerializer(serializers.ModelSerializer):
+    sent_to = serializers.EmailField()
+
+    class Meta:
+        model = FollowerInvitation
+        fields = ['sent_by', 'sent_to']
 
 
 class AlertSettingsReadSerializer(serializers.ModelSerializer):

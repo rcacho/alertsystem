@@ -1,3 +1,4 @@
+import random, string
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from model_utils.models import TimeStampedModel
@@ -8,6 +9,7 @@ class User(AbstractUser):
         Admin = 0
         Basic = 1
 
+    email = models.EmailField(max_length=50, unique=True)
     role = models.IntegerField(choices=Role.choices, default=Role.Basic)
 
     def is_uploader(self, user_id):
@@ -51,6 +53,20 @@ class Observer(models.Model):
     uploader = models.ForeignKey(Uploader, related_name="followers",
                                  on_delete=models.CASCADE)
     status = models.IntegerField(choices=Status.choices, default=Status.Following)
+    accepted = models.BooleanField(default=False)
+
+
+def generate_follower_token():
+    return ''.join(random.choice(string.ascii_uppercase + string.digits, k=12))
+
+
+class FollowerInvitation(models.Model):
+    sent_by = models.ForeignKey(Uploader, related_name="follower_invitations_sent",
+                                on_delete=models.CASCADE)
+    sent_to = models.ForeignKey(User, related_name="follow_invitations_received",
+                                on_delete=models.CASCADE)
+    token = models.CharField(max_length=35,
+                             default=generate_follower_token())
     accepted = models.BooleanField(default=False)
 
 

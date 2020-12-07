@@ -11,6 +11,13 @@ class IsUploaderOrFollower(permissions.BasePermission):
         return False
 
 
+class IsUploader(permissions.BasePermission):
+    def has_object_permissions(self, request, view, obj):
+        if request.user.Role == User.Role.Admin or request.user.is_uploader(obj.uploader.owner.id):
+            return True
+        return False
+
+
 class IsObserver(permissions.BasePermission):
     def has_object_permissions(self, request, view, obj):
         if request.user.Role == User.Role.Admin or request.user.id == obj.observer.owner.id:
