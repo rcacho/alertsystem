@@ -28,6 +28,9 @@ class Uploader(models.Model):
     diabetes_type = models.IntegerField(choices=DiabetesType.choices,
                                         default=DiabetesType.none)
 
+    def get_alert_settings(self):
+        return [follower.alert_settings for follower in self.followers.all()]
+
 
 class Observer(models.Model):
     class Status(models.IntegerChoices):
@@ -36,7 +39,7 @@ class Observer(models.Model):
 
     owner = models.ForeignKey(User, related_name="observing",
                               on_delete=models.CASCADE)
-    uploader = models.ForeignKey(Uploader, related_name="follower",
+    uploader = models.ForeignKey(Uploader, related_name="followers",
                                  on_delete=models.CASCADE)
     status = models.IntegerField(choices=Status.choices, default=Status.Following)
     accepted = models.BooleanField(default=False)
@@ -46,7 +49,26 @@ class GlucosePoint(TimeStampedModel):
     value = models.IntegerField()
     timestamp = models.DateTimeField()
     device_data = models.JSONField(null=True)
-    uploader = models.ForeignKey('alerts.Uploader', related_name='glucose_points', on_delete=models.CASCADE)
+    uploader = models.ForeignKey('alerts.Uploader',
+                                 related_name='glucose_points', on_delete=models.CASCADE)
 
     class Meta:
         ordering = ['timestamp']
+
+
+class AlertSettings(TimeStampedModel):
+    observer = models.OneToOneField('alerts.Observer',
+                                    related_name='alert_settings', on_delete=models.CASCADE)
+    high_value = models.IntegerField(default=180)
+    low_value = models.IntegerField(default=70)
+
+
+class GlucoseAlert(TimeStampedModel):
+    class Type(models.IntegerChoices):
+        Low = 1
+        High = 2
+
+    observer = models.ForeignKey('alerts.Observer',
+                                 related_name='high_alerts', on_delete=models.CASCADE)
+    glucose_point = models.ForeignKey('alerts.GlucosePoint', on_delete=models.CASCADE)
+    alert_type = models.IntegerField(choices=Type.choices)
